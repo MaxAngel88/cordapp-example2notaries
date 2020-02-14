@@ -76,12 +76,25 @@ task deployNodes(type: Cordform, dependsOn: ['jar']) {
         cordapp project(":contracts-kotlin")
     }
     node {
-        name "O=Notary,L=London,C=GB"
+        name "O=Notary-1,L=London,C=GB"
         notary = [validating : false]
         p2pPort 10000
         rpcSettings {
             address("localhost:10001")
             adminAddress("localhost:10002")
+        }
+        projectCordapp {
+            deploy = false
+        }
+        cordapps.clear()
+    }
+    node {
+        name "O=Notary-2,L=London,C=GB"
+        notary = [validating : false]
+        p2pPort 10016
+        rpcSettings {
+            address("localhost:10017")
+            adminAddress("localhost:10018")
         }
         projectCordapp {
             deploy = false
