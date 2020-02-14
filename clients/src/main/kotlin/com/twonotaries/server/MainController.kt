@@ -12,6 +12,8 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType.*
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import pojo.CreateIOUPojo
+import pojo.ResponsePojo
 import javax.servlet.http.HttpServletRequest
 
 val SERVICE_NAMES = listOf("Notary", "Network Map Service")
@@ -21,7 +23,7 @@ val SERVICE_NAMES = listOf("Notary", "Network Map Service")
  */
 
 @RestController
-@RequestMapping("/api/example/") // The paths for GET and POST requests are relative to this base path.
+@RequestMapping("/api/example2notaries/") // The paths for GET and POST requests are relative to this base path.
 class MainController(rpc: NodeRPCConnection) {
 
     companion object {
@@ -70,26 +72,29 @@ class MainController(rpc: NodeRPCConnection) {
      * The flow is invoked asynchronously. It returns a future when the flow's call() method returns.
      */
 
-    @PostMapping(value = [ "create-iou" ], produces = [ TEXT_PLAIN_VALUE ], headers = [ "Content-Type=application/x-www-form-urlencoded" ])
-    fun createIOU(request: HttpServletRequest): ResponseEntity<String> {
-        val iouValue = request.getParameter("iouValue").toInt()
-        val partyName = request.getParameter("partyName")
-        if(partyName == null){
-            return ResponseEntity.badRequest().body("Query parameter 'partyName' must not be null.\n")
+    @PostMapping(value = [ "create-iou" ], produces = [ APPLICATION_JSON_VALUE ], headers = [ "Content-Type=application/json" ])
+    fun createIOU(
+            @RequestBody
+            createIOUPojo : CreateIOUPojo): ResponseEntity<ResponsePojo> {
+        val iouValue = createIOUPojo.iouValue.toInt()
+        val partyName = createIOUPojo.partyName
+
+        if(partyName.isNullOrEmpty()){
+            return ResponseEntity.badRequest().body(ResponsePojo(outcome = "ERROR", message = "partyName cannot be empty..", data = null))
         }
         if (iouValue <= 0 ) {
-            return ResponseEntity.badRequest().body("Query parameter 'iouValue' must be non-negative.\n")
+            return ResponseEntity.badRequest().body(ResponsePojo(outcome = "ERROR", message = "iouValue cannot be empty..", data = null))
         }
         val partyX500Name = CordaX500Name.parse(partyName)
-        val otherParty = proxy.wellKnownPartyFromX500Name(partyX500Name) ?: return ResponseEntity.badRequest().body("Party named $partyName cannot be found.\n")
+        val otherParty = proxy.wellKnownPartyFromX500Name(partyX500Name) ?: return ResponseEntity.badRequest().body(ResponsePojo(outcome = "ERROR", message = "$partyName cannot be found..", data = null))
 
         return try {
             val signedTx = proxy.startTrackedFlow(::Initiator, iouValue, otherParty).returnValue.getOrThrow()
-            ResponseEntity.status(HttpStatus.CREATED).body("Transaction id ${signedTx.id} committed to ledger.\n")
+            ResponseEntity.status(HttpStatus.CREATED).body(ResponsePojo(outcome = "SUCCESS", message = "Transaction id ${signedTx.linearId.id} committed to ledger.\n", data = signedTx))
 
         } catch (ex: Throwable) {
             logger.error(ex.message, ex)
-            ResponseEntity.badRequest().body(ex.message!!)
+            ResponseEntity.badRequest().body(ResponsePojo(outcome = "ERRROR", message =  ex.message!!, data = null))
         }
     }
 

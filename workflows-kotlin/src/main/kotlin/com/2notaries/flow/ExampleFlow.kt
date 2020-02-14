@@ -13,6 +13,8 @@ import net.corda.core.transactions.SignedTransaction
 import net.corda.core.transactions.TransactionBuilder
 import net.corda.core.utilities.ProgressTracker
 import net.corda.core.utilities.ProgressTracker.Step
+import java.security.SecureRandom
+import kotlin.math.abs
 
 /**
  * This flow allows two parties (the [Initiator] and the [Acceptor]) to come to an agreement about the IOU encapsulated
@@ -29,7 +31,7 @@ object ExampleFlow {
     @InitiatingFlow
     @StartableByRPC
     class Initiator(val iouValue: Int,
-                    val otherParty: Party) : FlowLogic<SignedTransaction>() {
+                    val otherParty: Party) : FlowLogic<IOUState>() {
         /**
          * The progress tracker checkpoints each stage of the flow and outputs the specified messages when each
          * checkpoint is reached in the code. See the 'progressTracker.currentStep' expressions within the call() function.
@@ -61,9 +63,11 @@ object ExampleFlow {
          * The flow logic is encapsulated within the call() method.
          */
         @Suspendable
-        override fun call(): SignedTransaction {
+        override fun call(): IOUState {
+            // Create random 32 bit - positive number with SecureRandom and make two-module to balance the use of notaries
+            val randomNotaryIndex : Int = abs(SecureRandom().nextInt() % 2)
             // Obtain a reference to the notary we want to use.
-            val notary = serviceHub.networkMapCache.notaryIdentities[0]
+            val notary = serviceHub.networkMapCache.notaryIdentities[randomNotaryIndex]
 
             // Stage 1.
             progressTracker.currentStep = GENERATING_TRANSACTION
@@ -93,7 +97,9 @@ object ExampleFlow {
             // Stage 5.
             progressTracker.currentStep = FINALISING_TRANSACTION
             // Notarise and record the transaction in both parties' vaults.
-            return subFlow(FinalityFlow(fullySignedTx, setOf(otherPartySession), FINALISING_TRANSACTION.childProgressTracker()))
+            subFlow(FinalityFlow(fullySignedTx, setOf(otherPartySession), FINALISING_TRANSACTION.childProgressTracker()))
+
+            return iouState
         }
     }
 
