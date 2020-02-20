@@ -1,4 +1,4 @@
-package com.`2notaries`.schema
+package com.twonotaries.schema
 
 import net.corda.core.schemas.MappedSchema
 import net.corda.core.schemas.PersistentState

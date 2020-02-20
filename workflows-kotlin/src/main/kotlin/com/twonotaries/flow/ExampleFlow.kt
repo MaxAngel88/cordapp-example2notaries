@@ -1,10 +1,10 @@
-package com.`2notaries`.flow
+package com.twonotaries.flow
 
 import co.paralleluniverse.fibers.Suspendable
-import com.`2notaries`.contract.IOUContract
-import com.`2notaries`.flow.ExampleFlow.Acceptor
-import com.`2notaries`.flow.ExampleFlow.Initiator
-import com.`2notaries`.state.IOUState
+import com.twonotaries.contract.IOUContract
+import com.twonotaries.flow.ExampleFlow.Acceptor
+import com.twonotaries.flow.ExampleFlow.Initiator
+import com.twonotaries.state.IOUState
 import net.corda.core.contracts.Command
 import net.corda.core.contracts.requireThat
 import net.corda.core.flows.*

@@ -1,7 +1,7 @@
-package com.`2notaries`.state
+package com.twonotaries.state
 
-import com.`2notaries`.contract.IOUContract
-import com.`2notaries`.schema.IOUSchemaV1
+import com.twonotaries.contract.IOUContract
+import com.twonotaries.schema.IOUSchemaV1
 import net.corda.core.contracts.BelongsToContract
 import net.corda.core.contracts.ContractState
 import net.corda.core.contracts.LinearState
