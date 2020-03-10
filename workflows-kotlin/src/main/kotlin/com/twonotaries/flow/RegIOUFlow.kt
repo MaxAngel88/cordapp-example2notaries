@@ -106,7 +106,7 @@ object RegIOUFlow {
                     Instant.now(),
                     oldWalletState.amount - oldIOUState.value,
                     "update wallet. Causale: $causale",
-                    UniqueIdentifier(id = UUID.randomUUID())
+                    oldWalletState.linearId
             )
 
             // check notary on oldIOUState to match with the notary of oldWalletState

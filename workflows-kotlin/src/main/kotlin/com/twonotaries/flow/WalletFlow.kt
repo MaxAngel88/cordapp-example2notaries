@@ -202,7 +202,7 @@ object WalletFlow {
                     Instant.now(),
                     oldWalletState.amount + newAddAmount,
                     lastMovement,
-                    UniqueIdentifier(id = UUID.randomUUID())
+                    oldWalletState.linearId
             )
 
             val txCommand = Command(WalletContract.Commands.Update(), newWalletState.participants.map { it.owningKey })
