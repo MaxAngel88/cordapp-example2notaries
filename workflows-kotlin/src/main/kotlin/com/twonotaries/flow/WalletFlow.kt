@@ -4,12 +4,9 @@ import co.paralleluniverse.fibers.Suspendable
 import com.twonotaries.contract.WalletContract
 import com.twonotaries.state.WalletState
 import net.corda.core.contracts.Command
-import net.corda.core.contracts.StateAndContract
 import net.corda.core.contracts.UniqueIdentifier
 import net.corda.core.contracts.requireThat
 import net.corda.core.flows.*
-import net.corda.core.identity.AbstractParty
-import net.corda.core.identity.CordaX500Name
 import net.corda.core.identity.Party
 import net.corda.core.node.services.Vault
 import net.corda.core.node.services.queryBy
@@ -67,7 +64,7 @@ object WalletFlow {
         @Suspendable
         override fun call(): WalletState {
             // Create random 32 bit - positive number with SecureRandom and make two-module to balance the use of notaries
-            val randomNotaryIndex : Int = abs(SecureRandom().nextInt() % 2)
+            val randomNotaryIndex : Int = abs(SecureRandom().nextInt() % serviceHub.networkMapCache.notaryIdentities.size)
             // Obtain a reference to the notary we want to use.
             val notary = serviceHub.networkMapCache.notaryIdentities[randomNotaryIndex]
 
@@ -123,7 +120,7 @@ object WalletFlow {
                     "This must be an wallet transaction." using (output is WalletState)
                     val wallet = output as WalletState
                     /* "other rule wallet" using (wallet is new rule) */
-                    "amount cannot be negative" using (wallet.amount > 0)
+                    "amount cannot be negative" using (wallet.amount >= 0)
                     "lastMovement cannot be empty" using (wallet.lastMovement.isNotEmpty())
                 }
             }
@@ -141,7 +138,7 @@ object WalletFlow {
     @InitiatingFlow
     @StartableByRPC
     class Updater(val walletLinearId: String,
-                  val newAmount: Double,
+                  val newAddAmount: Double,
                   val lastMovement: String) : FlowLogic<WalletState>() {
         /**
          * The progress tracker checkpoints each stage of the flow and outputs the specified messages when each
@@ -203,7 +200,7 @@ object WalletFlow {
                     myLegalIdentity,
                     oldWalletState.timeCreation,
                     Instant.now(),
-                    newAmount,
+                    oldWalletState.amount + newAddAmount,
                     lastMovement,
                     UniqueIdentifier(id = UUID.randomUUID())
             )
@@ -246,7 +243,7 @@ object WalletFlow {
                         "This must be an wallet transaction." using (output is WalletState)
                         val wallet = output as WalletState
                         /* "other rule wallet" using (output is new rule) */
-                        "amount cannot be negative" using (wallet.amount > 0)
+                        "amount cannot be negative" using (wallet.amount >= 0)
                         "lastMovement cannot be empty" using (wallet.lastMovement.isNotEmpty())
                     }
                 }

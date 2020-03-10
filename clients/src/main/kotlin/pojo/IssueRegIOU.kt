@@ -1,11 +1,10 @@
 package pojo
 
-
 import net.corda.core.serialization.CordaSerializable
 
 @CordaSerializable
-data class UpdateWalletPojo(
+data class IssueRegIOU(
+        val iouLinearId: String = "",
         val walletLinearId: String = "",
-        val newAddAmount: Double = 0.0,
-        val lastMovement: String = ""
+        val causale: String = ""
 )

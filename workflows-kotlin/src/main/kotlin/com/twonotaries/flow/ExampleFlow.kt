@@ -65,7 +65,7 @@ object ExampleFlow {
         @Suspendable
         override fun call(): IOUState {
             // Create random 32 bit - positive number with SecureRandom and make two-module to balance the use of notaries
-            val randomNotaryIndex : Int = abs(SecureRandom().nextInt() % 2)
+            val randomNotaryIndex : Int = abs(SecureRandom().nextInt() % serviceHub.networkMapCache.notaryIdentities.size)
             // Obtain a reference to the notary we want to use.
             val notary = serviceHub.networkMapCache.notaryIdentities[randomNotaryIndex]
 
@@ -73,7 +73,7 @@ object ExampleFlow {
             progressTracker.currentStep = GENERATING_TRANSACTION
             // Generate an unsigned transaction.
             val iouState = IOUState(iouValue, serviceHub.myInfo.legalIdentities.first(), otherParty)
-            val txCommand = Command(IOUContract.Commands.Create(), iouState.participants.map { it.owningKey })
+            val txCommand = Command(IOUContract.Commands.Issue(), iouState.participants.map { it.owningKey })
             val txBuilder = TransactionBuilder(notary)
                     .addOutputState(iouState, IOUContract.ID)
                     .addCommand(txCommand)

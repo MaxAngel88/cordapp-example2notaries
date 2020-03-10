@@ -1,8 +1,8 @@
 package com.twonotaries.server
 
 import com.twonotaries.flow.ExampleFlow.Initiator
+import com.twonotaries.flow.RegIOUFlow.RegIssuer
 import com.twonotaries.flow.WalletFlow.Issuer
-//import com.twonotaries.flow.WalletFlow.Mover
 import com.twonotaries.flow.WalletFlow.Updater
 import com.twonotaries.schema.WalletSchemaV1
 import com.twonotaries.state.IOUState
@@ -193,15 +193,15 @@ class MainController(rpc: NodeRPCConnection) {
             updateWalletPojo: UpdateWalletPojo): ResponseEntity<ResponsePojo> {
 
         val walletLinearId = updateWalletPojo.walletLinearId
-        val newAmount = updateWalletPojo.newAmount
+        val newAddAmount = updateWalletPojo.newAddAmount
         val lastMovement = updateWalletPojo.lastMovement
 
         if(walletLinearId.isEmpty()) {
             return ResponseEntity.badRequest().body(ResponsePojo(outcome = "ERROR", message = "walletLinearId cannot be empty", data = null))
         }
 
-        if(newAmount.isNaN()) {
-            return ResponseEntity.badRequest().body(ResponsePojo(outcome = "ERROR", message = "newAmount must be a number", data = null))
+        if(newAddAmount.isNaN() || newAddAmount < 0.0) {
+            return ResponseEntity.badRequest().body(ResponsePojo(outcome = "ERROR", message = "newAddAmount must be a number greater than zero", data = null))
         }
 
         if(lastMovement.isEmpty()) {
@@ -209,7 +209,45 @@ class MainController(rpc: NodeRPCConnection) {
         }
 
         return try {
-            val updatedWallet = proxy.startTrackedFlow(::Updater, walletLinearId, newAmount, lastMovement).returnValue.getOrThrow()
+            val updatedWallet = proxy.startTrackedFlow(::Updater, walletLinearId, newAddAmount, lastMovement).returnValue.getOrThrow()
+            ResponseEntity.status(HttpStatus.CREATED).body(ResponsePojo(outcome = "SUCCESS", message = "Wallet with id: $walletLinearId update correctly. New WalletState with id: ${updatedWallet.linearId.id}  created.. ledger updated.\n", data = updatedWallet))
+        } catch (ex: Throwable) {
+            logger.error(ex.message, ex)
+            ResponseEntity.badRequest().body(ResponsePojo(outcome = "ERROR", message = ex.message!!, data = null))
+        }
+    }
+
+    /**
+     ******************************************* REG API ************************************************
+     */
+    /***
+     *
+     * Update Wallet
+     *
+     */
+    @PostMapping(value = [ "issue-RegIOU" ], consumes = [APPLICATION_JSON_VALUE], produces = [ APPLICATION_JSON_VALUE], headers = [ "Content-Type=application/json" ])
+    fun issueRegIOU(
+            @RequestBody
+            issueRegIOU: IssueRegIOU): ResponseEntity<ResponsePojo> {
+
+        val iouLinearId = issueRegIOU.iouLinearId
+        val walletLinearId = issueRegIOU.walletLinearId
+        val causale = issueRegIOU.causale
+
+        if(iouLinearId.isEmpty()) {
+            return ResponseEntity.badRequest().body(ResponsePojo(outcome = "ERROR", message = "iouLinearId cannot be empty", data = null))
+        }
+
+        if(walletLinearId.isEmpty()) {
+            return ResponseEntity.badRequest().body(ResponsePojo(outcome = "ERROR", message = "walletLinearId cannot be empty", data = null))
+        }
+
+        if(causale.isEmpty()) {
+            return ResponseEntity.badRequest().body(ResponsePojo(outcome = "ERROR", message = "causale cannot be empty", data = null))
+        }
+
+        return try {
+            val updatedWallet = proxy.startTrackedFlow(::RegIssuer, iouLinearId, walletLinearId, causale).returnValue.getOrThrow()
             ResponseEntity.status(HttpStatus.CREATED).body(ResponsePojo(outcome = "SUCCESS", message = "Wallet with id: $walletLinearId update correctly. New WalletState with id: ${updatedWallet.linearId.id}  created.. ledger updated.\n", data = updatedWallet))
         } catch (ex: Throwable) {
             logger.error(ex.message, ex)
